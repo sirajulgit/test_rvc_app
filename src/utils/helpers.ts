@@ -1,5 +1,5 @@
-export const API_URL = " https://keely-actinomorphic-unsusceptibly.ngrok-free.dev";
-export const SOCKET_URL = " https://keely-actinomorphic-unsusceptibly.ngrok-free.dev";
+export const API_URL = "https://free-vc-ac-chat.realtimevillage.com";
+export const SOCKET_URL = "https://free-vc-ac-chat.realtimevillage.com";
 
 
 export const API_ROUTES = {

@@ -16,7 +16,7 @@ import RegisterScreen from "./src/screens/Auth/RegisterScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import ChatScreen from "./src/screens/ChatScreen";
-import AudioCallScreen from "./src/screens/Calls/AudioCallScreen";
+// import AudioCallScreen from "./src/screens/Calls/AudioCallScreen";
 // import VideoCallScreen from "./src/screens/Calls/VideoCallScreen";
 
 export const navigationRef = createNavigationContainerRef() as any;
@@ -105,7 +105,7 @@ const App = () => {
               <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
               <Stack.Screen name="Profile" component={ProfileScreen} />
               <Stack.Screen name="Chat" component={ChatScreenWrapper} options={{ headerShown: false }} />
-              <Stack.Screen name="AudioCall" component={AudioCallScreen} options={{ headerShown: false }} />
+              {/* <Stack.Screen name="AudioCall" component={AudioCallScreen} options={{ headerShown: false }} /> */}
               {/* <Stack.Screen name="VideoCall" component={VideoCallScreen} options={{ headerShown: false }} /> */}
             </>
           )}
