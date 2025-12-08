@@ -13,22 +13,25 @@ const IncomingCallPopup: React.FC<Props> = ({ visible }) => {
   if (!visible || !call.isIncoming) return null;
 
   const handleAccept = () => {
-    const offer = (useAuthStore as any).getState().incomingOffer;
-    if (!offer || !call.otherUserId) return;
+    if (!call.otherUserId || !call.incomingOffer) return;
 
-    WebRTCService.answerCall(call.otherUserId, offer);
+    // Stop showing popup
+    setCallState({ isIncoming: false });
+
+    // Accept call
+    WebRTCService.answerCall(call.otherUserId, call.incomingOffer);
   };
 
   const handleReject = () => {
     WebRTCService.endCall(true);
-    setCallState({ isIncoming: false });
+    setCallState({ isIncoming: false, incomingOffer: null });
   };
 
   return (
     <Modal transparent visible={visible} animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.box}>
-          <Text style={styles.title}>Incoming {call.callType} call</Text>
+          <Text style={styles.title}>Incoming {call.callType} Call</Text>
           <Text style={styles.name}>{call.otherUserName}</Text>
 
           <View style={styles.buttons}>
@@ -61,7 +64,6 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 25,
     alignItems: "center",
-    elevation: 10,
   },
   title: {
     fontSize: 18,

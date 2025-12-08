@@ -1,21 +1,23 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { MediaStream } from "react-native-webrtc";
 
-
 export interface CallState {
-  localStream: MediaStream | null;     // Your camera/mic stream
-  remoteStream: MediaStream | null;    // Opponent stream
+  localStream: MediaStream | null;
+  remoteStream: MediaStream | null;
 
-  otherUserId: number | null;          // Who you are calling / who is calling you
-  otherUserName: string | null;        // For UI display
+  otherUserId: number | null;
+  otherUserName: string | null;
 
-  callType: "video" | "audio" | null;  // Video or Audio call
-  isCalling: boolean;                  // During a call
-  isMuted: boolean;                    // Microphone muted
-  isIncoming: boolean;                 // True when receiving a call
+  callType: "video" | "audio" | null;
+  isCalling: boolean;
+  isMuted: boolean;
+  isIncoming: boolean;
+
+  incomingOffer: any | null; // ⭐ NEW
 }
 
-/* Default initial state */
 const defaultCallState: CallState = {
   localStream: null,
   remoteStream: null,
@@ -27,18 +29,15 @@ const defaultCallState: CallState = {
   isCalling: false,
   isMuted: false,
   isIncoming: false,
+
+  incomingOffer: null, // ⭐ NEW
 };
 
-/* ------------------------------------------------------------
- * 2) Global App Store Type
- * ------------------------------------------------------------ */
 interface Store {
-  // ---------- Call State ----------
   call: CallState;
   setCallState: (data: Partial<CallState>) => void;
   resetCall: () => void;
 
-  // ---------- Auth State ----------
   user: any;
   token: string | null;
   isAuthenticated: boolean;
@@ -47,53 +46,53 @@ interface Store {
   logout: () => void;
 }
 
-/* ------------------------------------------------------------
- * 3) Create Zustand Store
- * ------------------------------------------------------------ */
-export const useAuthStore = create<Store>((set) => ({
-  /* CALL DATA */
-  call: defaultCallState,
+export const useAuthStore = create<Store>()(
+  persist(
+    (set) => ({
+      call: defaultCallState,
 
-  // Update only specific fields
-  setCallState: (data) =>
-    set((state) => ({
-      call: { ...state.call, ...data },
-    })),
+      setCallState: (data) =>
+        set((state) => ({
+          call: { ...state.call, ...data },
+        })),
 
-  // Reset call state fully
-  resetCall: () => set({ call: defaultCallState }),
+      resetCall: () => set({ call: defaultCallState }),
 
-  /* AUTH DATA */
-  user: null,
-  token: null,
-  isAuthenticated: false,
-
-  // Save user details + token
-  setAuth: ({ user, token }) =>
-    set({
-      user,
-      token,
-      isAuthenticated: !!token,
-    }),
-
-  // Logout fully
-  logout: () =>
-    set({
       user: null,
       token: null,
       isAuthenticated: false,
-      call: defaultCallState,
-    }),
-}));
 
-/**
- * ======================
- *  HOW TO USE (Example)
- * ======================
- *
- * const { user, token, call, setCallState } = useAuthStore();
- *
- * setCallState({ isCalling: true });
- * useAuthStore.getState().resetCall();
- *
- */
+      setAuth: ({ user, token }) =>
+        set({
+          user,
+          token,
+          isAuthenticated: !!token,
+        }),
+
+      logout: () =>
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          call: defaultCallState,
+        }),
+    }),
+
+    ///////////////////////////// | STORAGE | /////////////////////////////
+    {
+      name: "app-auth-store-final-rvac",
+      storage: {
+        getItem: async (name) => {
+          const v = await AsyncStorage.getItem(name);
+          return v ? JSON.parse(v) : null;
+        },
+        setItem: async (name, value) => {
+          await AsyncStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: async (name) => {
+          await AsyncStorage.removeItem(name);
+        },
+      },
+    }
+  )
+);

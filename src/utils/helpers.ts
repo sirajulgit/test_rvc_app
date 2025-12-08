@@ -7,8 +7,12 @@ export const API_ROUTES = {
     LOGIN: `${API_URL}/auth/login`,
     USERS: `${API_URL}/auth/users`,
     CHAT: `${API_URL}/chat`,
+    UPLOAD: `${API_URL}/upload`,
 };
 
+
+// Define the chunk size (1MB)
+export const FILE_UPLOAD_CHUNK_SIZE = 1024 * 1024;
 
 
 export type RootStackParamList = {

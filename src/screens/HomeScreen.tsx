@@ -1,28 +1,32 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, { useCallback, useState } from "react";
 import {
     View,
     Text,
     StyleSheet,
     FlatList,
     TouchableOpacity,
+    RefreshControl,
 } from "react-native";
 import axios from "axios";
 import { useAuthStore } from "../store/useStore";
 import WebRTCService from "../services/webrtcService";
 import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { API_ROUTES } from "../utils/helpers";
+import { useFocusEffect } from "@react-navigation/native";
 
 
 
 const HomeScreen = ({ navigation }: any) => {
-    const { user , token} = useAuthStore();
+    const { user, token } = useAuthStore();
     const [users, setUsers] = useState<any[]>([]);
+    const [refreshing, setRefreshing] = useState(false);
 
     const fetchUsers = async () => {
         if (!user) return;
 
         try {
-            const res = await axios.get(`${API_ROUTES.USERS}`,{
+            const res = await axios.get(`${API_ROUTES.USERS}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -42,10 +46,29 @@ const HomeScreen = ({ navigation }: any) => {
     };
 
 
-    useEffect(() => {
-        fetchUsers();
+
+    // -------------------------------
+    // Run every time screen becomes active
+    // -------------------------------
+    useFocusEffect(
+        useCallback(() => {
+            fetchUsers();
+            // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [])
+    );
+
+    
+    // -------------------------------
+    // Pull‑to‑refresh handler
+    // -------------------------------
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        fetchUsers().finally(() => setRefreshing(false));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+
+
 
     return (
         <View style={styles.container}>
@@ -55,6 +78,9 @@ const HomeScreen = ({ navigation }: any) => {
             <FlatList
                 data={users}
                 keyExtractor={(item) => item.id.toString()}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+                }
                 contentContainerStyle={{ padding: 10 as number }}
                 renderItem={({ item }) => (
                     <View style={styles.userRow}>
@@ -64,6 +90,8 @@ const HomeScreen = ({ navigation }: any) => {
                         </View>
 
                         <View style={styles.actions}>
+
+                            {/* Chat */}
                             <TouchableOpacity
                                 style={styles.iconBtn}
                                 onPress={() => startChat(item)}
@@ -71,19 +99,21 @@ const HomeScreen = ({ navigation }: any) => {
                                 <Ionicons name="chatbubble-outline" size={24} color="#fff" />
                             </TouchableOpacity>
 
-                            <TouchableOpacity
+                            {/* Audio Call */}
+                            {/* <TouchableOpacity
                                 style={styles.iconBtn}
                                 onPress={() => WebRTCService.startCall(item.id, "audio")}
                             >
                                 <Ionicons name="call-outline" size={24} color="#fff" />
-                            </TouchableOpacity>
+                            </TouchableOpacity> */}
 
-                            <TouchableOpacity
+                            {/* Video Call */}
+                            {/* <TouchableOpacity
                                 style={styles.iconBtn}
                                 onPress={() => WebRTCService.startCall(item.id, "video")}
                             >
                                 <Ionicons name="videocam-outline" size={24} color="#fff" />
-                            </TouchableOpacity>
+                            </TouchableOpacity> */}
                         </View>
                     </View>
                 )}

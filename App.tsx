@@ -19,25 +19,28 @@ import ChatScreen from "./src/screens/ChatScreen";
 // import AudioCallScreen from "./src/screens/Calls/AudioCallScreen";
 // import VideoCallScreen from "./src/screens/Calls/VideoCallScreen";
 
+// Popup
+import IncomingCallPopup from "./src/components/IncomingCallPopup";
+
 export const navigationRef = createNavigationContainerRef() as any;
 const Stack = createStackNavigator();
 
-
-
+// Wrapper because React Navigation sometimes breaks props
 const ChatScreenWrapper = (props: any) => <ChatScreen {...props} />;
 
 
-// ───────────────────────────────────────────────────────────────
-// MAIN APP
-// ───────────────────────────────────────────────────────────────
-const App = () => {
-  const { isAuthenticated, token, user } = useAuthStore();
 
 
+// ───────────────────────────────────────────────
+// MAIN APP FUNCTION
+// ───────────────────────────────────────────────
+function App() {
+  const { isAuthenticated, token, user, call } = useAuthStore();
 
-  // ───────────────────────────────────────────────────────────────
-  // PERMISSIONS 
-  // ───────────────────────────────────────────────────────────────
+  // ######################## | START | ########################
+  // ───────────────────────────────────────────────
+  // ANDROID PERMISSIONS
+  // ───────────────────────────────────────────────
   const requestPermissions = async () => {
     if (Platform.OS !== "android") return;
 
@@ -48,48 +51,51 @@ const App = () => {
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
       ]);
 
-      // Check if ALL results are 'granted'
       const allGranted = Object.values(results).every(
         (status) => status === PermissionsAndroid.RESULTS.GRANTED
       );
 
-      if (allGranted) {
-        console.log('All permissions granted');
-      } else {
-        console.log('One or more permissions denied');
-      }
+      if (allGranted) console.log("All permissions granted");
+      else console.log("One or more permissions denied");
     } catch (err) {
-      console.error('Permission Request Error:', err);
+      console.error("Permission Request Error:", err);
     }
   };
 
-  // ───────────────────────────────────────────────────────────────
-  // ANDROID PERMISSIONS
-  // ───────────────────────────────────────────────────────────────
+  // ───────────────────────────────────────────────
+  // CALL requestPermissions FNC 
+  // ───────────────────────────────────────────────
   useEffect(() => {
     requestPermissions();
   }, []);
+  // ######################## | END | ###########################
 
-  // ───────────────────────────────────────────────────────────────
-  // CONNECT SOCKET AFTER LOGIN
-  // ───────────────────────────────────────────────────────────────
+
+
+  // ───────────────────────────────────────────────
+  // CONNECT TO SOCKET AFTER LOGIN
+  // ───────────────────────────────────────────────
   useEffect(() => {
     if (isAuthenticated && token && user) {
       WebRTCService.initSocket(token, user.id);
     }
   }, [isAuthenticated, token, user]);
 
-  // ───────────────────────────────────────────────────────────────
-  // NAVIGATE TO CALL SCREEN WHEN INCOMING CALL
-  // ───────────────────────────────────────────────────────────────
-  useEffect(() => {
-    WebRTCService.setCallNavigationHandler((type) => {
-      if (!navigationRef.isReady()) return;
 
-      if (type === "video") navigationRef.navigate("VideoCall");
-      else navigationRef.navigate("AudioCall");
-    });
-  }, []);
+  // // ───────────────────────────────────────────────
+  // // NAVIGATE TO CALL SCREEN
+  // // ───────────────────────────────────────────────
+  // useEffect(() => {
+  //   WebRTCService.setCallNavigationHandler((type) => {
+  //     if (!navigationRef.isReady()) return;
+
+  //     if (type === "video") {
+  //       navigationRef.navigate("VideoCall");
+  //     } else if (type === "audio") {
+  //       navigationRef.navigate("AudioCall");
+  //     }
+  //   });
+  // }, []);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 as number }}>
@@ -97,24 +103,55 @@ const App = () => {
         <Stack.Navigator screenOptions={{ headerShown: true }}>
           {!isAuthenticated ? (
             <>
-              <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+              <Stack.Screen
+                name="Login"
+                component={LoginScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Register"
+                component={RegisterScreen}
+                options={{ headerShown: false }}
+              />
             </>
           ) : (
             <>
-              <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+              <Stack.Screen
+                name="Home"
+                component={HomeScreen}
+                options={{ headerShown: false }}
+              />
+
               <Stack.Screen name="Profile" component={ProfileScreen} />
-              <Stack.Screen name="Chat" component={ChatScreenWrapper} options={{ headerShown: false }} />
-              {/* <Stack.Screen name="AudioCall" component={AudioCallScreen} options={{ headerShown: false }} /> */}
-              {/* <Stack.Screen name="VideoCall" component={VideoCallScreen} options={{ headerShown: false }} /> */}
+
+              <Stack.Screen
+                name="Chat"
+                component={ChatScreenWrapper}
+                options={{ headerShown: false }}
+              />
+
+              {/* <Stack.Screen
+                name="AudioCall"
+                component={AudioCallScreen}
+                options={{ headerShown: false }}
+              /> */}
+
+              {/* 
+              <Stack.Screen
+                name="VideoCall"
+                component={VideoCallScreen}
+                options={{ headerShown: false }}
+              /> 
+              */}
             </>
           )}
         </Stack.Navigator>
       </NavigationContainer>
+
+      {/* 🔥 INCOMING CALL POPUP 🔥 */}
+      <IncomingCallPopup visible={call.isIncoming} />
     </GestureHandlerRootView>
   );
 };
 
 export default App;
-
-

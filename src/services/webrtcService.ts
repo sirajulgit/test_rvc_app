@@ -8,6 +8,8 @@ import {
 } from "react-native-webrtc";
 
 import InCallManager from "react-native-incall-manager";
+import { Vibration } from "react-native";
+import Sound from "react-native-sound";
 import { useAuthStore } from "../store/useStore";
 import { SOCKET_URL } from "../utils/helpers";
 
@@ -27,6 +29,33 @@ const ICE_CONFIG = {
 
 // Navigation callback type
 type NavHandler = (type: "video" | "audio") => void;
+
+// =======================================================
+// 🔔 RINGTONE SYSTEM
+// =======================================================
+let ringtone: Sound | null = null;
+
+const loadRingtone = () => {
+  ringtone = new Sound("ringtone.mp3", Sound.MAIN_BUNDLE, (err) => {
+    if (err) console.log("Ringtone load error:", err);
+  });
+};
+loadRingtone();
+
+const playRingtone = () => {
+  try {
+    ringtone?.setNumberOfLoops(-1);
+    ringtone?.play();
+    Vibration.vibrate([400, 400], true);
+  } catch { }
+};
+
+const stopRingtone = () => {
+  try {
+    ringtone?.stop();
+    Vibration.cancel();
+  } catch { }
+};
 
 // =======================================================
 // MAIN SERVICE
@@ -51,7 +80,9 @@ class WebRTCService {
       transports: ["websocket"],
     });
 
-    console.log(`/////////////////////////Socket connected: userId: ${userId} || token: ${token}`);
+    console.log(
+      `/////////////////////////Socket connected: userId: ${userId} || token: ${token}`
+    );
 
     this.attachListeners();
   };
@@ -77,10 +108,10 @@ class WebRTCService {
           otherUserName: name,
           callType: offerType,
           isIncoming: true,
+          incomingOffer: signal, // ⭐ FIXED
         });
 
-        // Save offer in store for answer screen
-        (useAuthStore as any).getState().incomingOffer = signal;
+        playRingtone(); // 🔔
 
         if (this.navHandler) this.navHandler(offerType);
       }
@@ -105,7 +136,9 @@ class WebRTCService {
     });
 
     // Chat
-    s.on("receive_message", (msg) => console.log("//////////////////////// Chat message:", msg));
+    s.on("receive_message", (msg) =>
+      console.log("//////////////////////// Chat message:", msg)
+    );
   }
 
   // -------------------------------------------------------
@@ -183,6 +216,7 @@ class WebRTCService {
       callType: type,
       isCalling: true,
       isIncoming: false,
+      incomingOffer: null,
     });
 
     InCallManager.start({ media: type });
@@ -190,10 +224,8 @@ class WebRTCService {
     await this.startLocalStream(type === "video");
     this.createPeerConnection(targetUserId);
 
-    if (!this.peerConnection) return;
-
-    const offer = await this.peerConnection.createOffer();
-    await this.peerConnection.setLocalDescription(offer);
+    const offer = await this.peerConnection!.createOffer();
+    await this.peerConnection!.setLocalDescription(offer);
 
     this.socket?.emit("call_user", {
       userToCall: targetUserId,
@@ -206,6 +238,8 @@ class WebRTCService {
   // ANSWER CALL
   // -------------------------------------------------------
   answerCall = async (callerId: number, offerSignal: any) => {
+    stopRingtone(); // 🔥 stop ringing
+
     const callType = useAuthStore.getState().call.callType || "video";
 
     useAuthStore.getState().setCallState({
@@ -218,7 +252,9 @@ class WebRTCService {
     await this.startLocalStream(callType === "video");
     this.createPeerConnection(callerId);
 
-    await this.peerConnection?.setRemoteDescription(new RTCSessionDescription(offerSignal));
+    await this.peerConnection?.setRemoteDescription(
+      new RTCSessionDescription(offerSignal)
+    );
 
     const answer = await this.peerConnection?.createAnswer();
     await this.peerConnection?.setLocalDescription(answer!);
@@ -252,9 +288,11 @@ class WebRTCService {
   // CHAT FEATURES
   // -------------------------------------------------------
   sendMessage = (roomId: string, content: string, receiverId: number) => {
+    console.log(`////////////////////////// roomId: ${roomId} || content: ${content} || receiverId: ${receiverId}`);
     this.socket?.emit("send_message", { roomId, content, receiverId });
   };
 
+  // ⭐ you were missing this → gives TypeScript error
   joinRoom = (roomId: string) => {
     this.socket?.emit("join_room", roomId);
   };
@@ -263,6 +301,8 @@ class WebRTCService {
   // END CALL
   // -------------------------------------------------------
   endCall = (emit = true) => {
+    stopRingtone(); // 🔔 stop sound
+
     const store = useAuthStore.getState();
     const otherId = store.call.otherUserId;
 
@@ -284,7 +324,6 @@ class WebRTCService {
     }
   };
 
-  // Allow ChatScreen to use socket
   getSocket() {
     return this.socket;
   }
