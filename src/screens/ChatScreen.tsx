@@ -122,6 +122,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     };
   }, [roomId, user?.id]);
 
+
   // -------------------------
   // Send text (optimistic)
   // -------------------------
@@ -149,10 +150,12 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       content: text,
       receiverId: targetUserId
     });
+    
 
     setText("");
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
+
 
   // -------------------------
   // Pick file using @react-native-documents/picker
@@ -211,6 +214,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+
   // -------------------------
   // Handle reaction (optimistic)
   // -------------------------
@@ -227,6 +231,8 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     WebRTCService.getSocket()?.emit("add_reaction", { messageId: message.id, emoji });
     setReactionTarget(null);
   };
+
+
 
   const renderItem = ({ item }: any) => {
     const isSelf = item.self;
